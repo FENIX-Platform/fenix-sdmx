@@ -96,15 +96,13 @@ public class ExportSDMX {
     public  void execution(Resource<DSDDataset, Object[]> res,Collection<Resource<DSDCodelist,Code>> codeList,OutputStream structureFile,
             OutputStream dataFile) throws IOException {        
         //Step 1 - Get the Application Context
-	ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("sdmx/spring/context.xml");
+	ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring/context.xml");
 	//Step 2 - Get the main class from the Spring beans container
 	ExportSDMX main = applicationContext.getBean(ExportSDMX.class);    
-        //Step 3
-	OutputStream outStructure = main.getFileOutputStreamStructure();            
-         //Step 4 - Define the output format
+         //Step 3 - Define the output format
 	STRUCTURE_OUTPUT_FORMAT sdmxFormat = STRUCTURE_OUTPUT_FORMAT.SDMX_V21_STRUCTURE_DOCUMENT;
 	StructureFormat outputFormat = new SdmxStructureFormat(sdmxFormat);        
-       //Step 5 - Write the structures out to the fie
+       //Step 4 - Write the structures out to the fie
 	//main.fileWriter.writeStructureToFile(outputFormat, outStructure,res,codeList);
        main.fileWriter.writeStructureToFile(outputFormat, structureFile,dataFile,res,codeList);
        

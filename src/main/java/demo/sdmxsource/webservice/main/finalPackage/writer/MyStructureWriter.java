@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import org.fao.fenix.commons.msd.dto.data.Resource;
 import org.fao.fenix.commons.msd.dto.full.Code;
 import org.fao.fenix.commons.msd.dto.full.DSDCodelist;
@@ -114,6 +117,56 @@ public class MyStructureWriter {
                 
         structureWritingManager.writeStructures(beans, outputFormat, out);
 	}
+
+
+    public void writeStructureToZipFile(StructureFormat outputFormat, OutputStream outputStream,
+            Resource<DSDDataset,Object[]> res,
+            Collection<Resource<DSDCodelist,Code>> codeList)  throws IOException {
+                SdmxBeans beans = new SdmxBeansImpl();
+
+
+                ExpHeaderSchemeBuilder headerbuilder=new ExpHeaderSchemeBuilder();
+                HeaderBean hb=headerbuilder.buildheader(res.getMetadata(),"FENIX");
+                beans.setHeader(hb);
+                beans.addAgencyScheme(agencySchemeBuilder.buildAgencyScheme("FENIX", "Fenix"));
+                if(res!=null && codeList!=null){
+                    Iterator li=codeList.iterator();
+                    while( li.hasNext() )
+                    {beans.addCodelist(ExpCodelistBuilder.buildCodeList((Resource<DSDCodelist,Code>)li.next()));}
+                }
+
+	beans.addIdentifiable(conceptSchemeBuilder.myBuildConceptScheme(res.getMetadata().getDsd().getColumns().iterator()));
+
+
+       // DataStructureBean dsd = dataStructureBuilder.buildDataStructure();
+	DataStructureBean dsd = dataStructureBuilder.myBuildDataStructure(res);
+
+        beans.addIdentifiable(dsd);
+        DataflowBean dfb=dataflowBuilder.buildDataflow("DF_FENIX", "FENIX DataFlow", dsd);
+	beans.addIdentifiable(dfb);
+
+
+        // END OF STRUCTURE
+        //begining of dataset
+
+        DataFormat dataFormat = new SdmxDataFormat(DATA_TYPE.COMPACT_2_1);
+	//DataWriterEngine dataWriterEngine = dataWriterManager.getDataWriterEngine(dataFormat, getFileDataOutputStream());
+        ZipOutputStream out = new ZipOutputStream(outputStream);
+        out.putNextEntry(new ZipEntry("data.xml"));
+	DataWriterEngine dataWriterEngine = dataWriterManager.getDataWriterEngine(dataFormat, out);
+
+        SampleDataWriter sampleDataWriter=new SampleDataWriter();
+
+        sampleDataWriter.writeSampleFlatData(dsd, dfb, dataWriterEngine,res);
+                //TEST
+//                beans.setHeader(null);
+
+        out.putNextEntry(new ZipEntry("structure.xml"));
+        structureWritingManager.writeStructures(beans, outputFormat, out);
+	}
+
+
+
     private OutputStream getFileDataOutputStream() throws IOException {
 		File structureFile = new File("src/main/resources/sdmx/data/sample_data.xml");
 		System.out.println("File Deleted : "+ structureFile.delete());
